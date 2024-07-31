@@ -40,41 +40,52 @@ def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
     else:
         return {'status': 'failed', 'message': f'Failed to upload {repo_path}: {response.json()}'}
 
-def update_file_in_github(file_path, repo_path, message, owner, repo, token):
-    def get_file_sha(path):
-        url = f'https://api.github.com/repos/{owner}/{repo}/contents/{path}'
-        headers = {
-            'Authorization': f'token {token}',
-        }
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            return response.json().get('sha')
-        else:
-            print(f"Failed to get SHA for {path}: {response.json()}")
-            return None
+class UpdateFileRequest(BaseModel):
+    file_path: str
+    repo_path: str
+    message: str
+    owner: str
+    repo: str
+    token: str
 
-    with open(file_path, "rb") as file:
-        content = base64.b64encode(file.read()).decode()
-
-    sha = get_file_sha(repo_path)
-    if sha is None:
-        return {'status': 'failed', 'message': f'Failed to get SHA for {repo_path}'}
-
+def get_file_sha(owner: str, repo: str, repo_path: str, token: str) -> Optional[str]:
     url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
     headers = {
         'Authorization': f'token {token}',
-        'Content-Type': 'application/json'
     }
-    data = {
-        'message': message,
-        'content': content,
-        'sha': sha
-    }
-    response = requests.put(url, headers=headers, json=data)
+    response = requests.get(url, headers=headers)
     if response.status_code == 200:
-        return {'status': 'success', 'message': f'Successfully updated {repo_path}'}
+        return response.json().get('sha')
     else:
-        return {'status': 'failed', 'message': f'Failed to update {repo_path}: {response.json()}'}
+        return None
+
+@app.post("/update_file")
+async def update_file_in_github(request: UpdateFileRequest):
+    try:
+        with open(request.file_path, "rb") as file:
+            content = base64.b64encode(file.read()).decode()
+
+        sha = get_file_sha(request.owner, request.repo, request.repo_path, request.token)
+        if sha is None:
+            raise HTTPException(status_code=400, detail=f'Failed to get SHA for {request.repo_path}')
+
+        url = f'https://api.github.com/repos/{request.owner}/{request.repo}/contents/{request.repo_path}'
+        headers = {
+            'Authorization': f'token {request.token}',
+            'Content-Type': 'application/json'
+        }
+        data = {
+            'message': request.message,
+            'content': content,
+            'sha': sha
+        }
+        response = requests.put(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return {"status": "success", "message": f"Successfully updated {request.repo_path}"}
+        else:
+            raise HTTPException(status_code=400, detail=f'Failed to update {request.repo_path}: {response.json()}')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 def delete_files_from_repo(owner: str, repo: str, token: str):
     def get_file_sha(path):
