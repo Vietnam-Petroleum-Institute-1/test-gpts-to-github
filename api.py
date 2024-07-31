@@ -50,6 +50,7 @@ def update_file_in_github(file_path, repo_path, message, owner, repo, token):
         if response.status_code == 200:
             return response.json().get('sha')
         else:
+            print(f"Failed to get SHA for {path}: {response.json()}")
             return None
 
     with open(file_path, "rb") as file:
