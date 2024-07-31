@@ -20,6 +20,7 @@ class RepoDetails(BaseModel):
     owner: str
     repo: str
     token: str
+
 class UpdateFileRequest(BaseModel):
     file_path: str
     repo_path: str
@@ -27,7 +28,7 @@ class UpdateFileRequest(BaseModel):
     owner: str
     repo: str
     token: str
-    
+
 def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
     with open(file_path, "rb") as file:
         content = base64.b64encode(file.read()).decode()
@@ -47,7 +48,7 @@ def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
     else:
         return {'status': 'failed', 'message': f'Failed to upload {repo_path}: {response.json()}'}
 
-def get_file_sha(owner: str, repo: str, repo_path: str, token: str) -> Optional[str]:
+def get_file_sha(owner: str, repo: str, repo_path: str, token: str) -> str:
     url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
     headers = {
         'Authorization': f'token {token}',
@@ -154,15 +155,6 @@ async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_p
     with open(file_location, "wb") as f:
         f.write(file.file.read())
     result = upload_file_to_github(file_location, repo_path, message, details.owner, details.repo, details.token)
-    os.remove(file_location)
-    return result
-
-@app.post("/update_file")
-async def update_file(details: RepoDetails, file: UploadFile = File(...), repo_path: str = Form(...), message: str = Form(...)):
-    file_location = f"/tmp/{file.filename}"
-    with open(file_location, "wb") as f:
-        f.write(file.file.read())
-    result = update_file_in_github(file_location, repo_path, message, details.owner, details.repo, details.token)
     os.remove(file_location)
     return result
 
