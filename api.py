@@ -20,7 +20,14 @@ class RepoDetails(BaseModel):
     owner: str
     repo: str
     token: str
-
+class UpdateFileRequest(BaseModel):
+    file_path: str
+    repo_path: str
+    message: str
+    owner: str
+    repo: str
+    token: str
+    
 def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
     with open(file_path, "rb") as file:
         content = base64.b64encode(file.read()).decode()
@@ -39,14 +46,6 @@ def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
         return {'status': 'success', 'message': f'Successfully uploaded {repo_path}'}
     else:
         return {'status': 'failed', 'message': f'Failed to upload {repo_path}: {response.json()}'}
-
-class UpdateFileRequest(BaseModel):
-    file_path: str
-    repo_path: str
-    message: str
-    owner: str
-    repo: str
-    token: str
 
 def get_file_sha(owner: str, repo: str, repo_path: str, token: str) -> Optional[str]:
     url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
