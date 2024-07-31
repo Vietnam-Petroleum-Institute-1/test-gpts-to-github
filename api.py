@@ -1,19 +1,9 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
-import joblib
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.metrics import mean_squared_error, r2_score
+import requests
 import os
-import io
 
 app = FastAPI()
-
 
 api_key = os.environ.get('API_KEY')
 
@@ -21,6 +11,9 @@ api_key = os.environ.get('API_KEY')
 async def hello_world():
     return {"message": "Hello World"}
     
+@app.get("/xinchao")
+async def hello_world():
+    return {"message": "Xin chào thế giới"}
 class RepoDetails(BaseModel):
     owner: str
     repo: str
@@ -34,7 +27,7 @@ def delete_files_from_repo(owner: str, repo: str, token: str):
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            return response.json()['sha']
+            return response.json().get('sha')
         else:
             return None
 
@@ -56,7 +49,10 @@ def delete_files_from_repo(owner: str, repo: str, token: str):
         if response.status_code == 200:
             return {'status': 'success', 'message': f'Successfully deleted {path}'}
         else:
-            return {'status': 'failed', 'message': f'Failed to delete {path}: {response.json()}'}
+            try:
+                return {'status': 'failed', 'message': f'Failed to delete {path}: {response.json()}'}
+            except ValueError:
+                return {'status': 'failed', 'message': f'Failed to delete {path}: {response.text}'}
 
     def list_all_files():
         url = f'https://api.github.com/repos/{owner}/{repo}/git/trees/main?recursive=1'
@@ -65,7 +61,7 @@ def delete_files_from_repo(owner: str, repo: str, token: str):
         }
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
-            tree = response.json()['tree']
+            tree = response.json().get('tree', [])
             return [file['path'] for file in tree if file['type'] == 'blob']
         else:
             return []
