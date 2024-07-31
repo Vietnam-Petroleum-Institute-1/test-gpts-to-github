@@ -8,7 +8,7 @@ app = FastAPI()
 
 api_key = os.environ.get('API_KEY')
 
-@app.get("/helloworld")
+@app.get("/hello")
 async def hello_world():
     return {"message": "Hello World"}
 
