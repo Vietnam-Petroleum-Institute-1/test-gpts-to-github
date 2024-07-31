@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 import requests
 import os
+import base64
 
 app = FastAPI()
 
@@ -10,14 +11,69 @@ api_key = os.environ.get('API_KEY')
 @app.get("/helloworld")
 async def hello_world():
     return {"message": "Hello World"}
-    
+
 @app.get("/xinchao")
-async def hello_world():
+async def hello_world_vietnamese():
     return {"message": "Xin chào thế giới"}
+
 class RepoDetails(BaseModel):
     owner: str
     repo: str
     token: str
+
+def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
+    with open(file_path, "rb") as file:
+        content = base64.b64encode(file.read()).decode()
+    
+    url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
+    headers = {
+        'Authorization': f'token {token}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'message': message,
+        'content': content
+    }
+    response = requests.put(url, headers=headers, json=data)
+    if response.status_code == 201:
+        return {'status': 'success', 'message': f'Successfully uploaded {repo_path}'}
+    else:
+        return {'status': 'failed', 'message': f'Failed to upload {repo_path}: {response.json()}'}
+
+def update_file_in_github(file_path, repo_path, message, owner, repo, token):
+    def get_file_sha(path):
+        url = f'https://api.github.com/repos/{owner}/{repo}/contents/{path}'
+        headers = {
+            'Authorization': f'token {token}',
+        }
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return response.json().get('sha')
+        else:
+            return None
+
+    with open(file_path, "rb") as file:
+        content = base64.b64encode(file.read()).decode()
+
+    sha = get_file_sha(repo_path)
+    if sha is None:
+        return {'status': 'failed', 'message': f'Failed to get SHA for {repo_path}'}
+
+    url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
+    headers = {
+        'Authorization': f'token {token}',
+        'Content-Type': 'application/json'
+    }
+    data = {
+        'message': message,
+        'content': content,
+        'sha': sha
+    }
+    response = requests.put(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return {'status': 'success', 'message': f'Successfully updated {repo_path}'}
+    else:
+        return {'status': 'failed', 'message': f'Failed to update {repo_path}: {response.json()}'}
 
 def delete_files_from_repo(owner: str, repo: str, token: str):
     def get_file_sha(path):
@@ -80,6 +136,24 @@ def delete_files_from_repo(owner: str, repo: str, token: str):
 @app.post("/delete_files")
 def delete_files(details: RepoDetails):
     return delete_files_from_repo(details.owner, details.repo, details.token)
+
+@app.post("/upload_file")
+async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_path: str = Form(...), message: str = Form(...)):
+    file_location = f"/tmp/{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(file.file.read())
+    result = upload_file_to_github(file_location, repo_path, message, details.owner, details.repo, details.token)
+    os.remove(file_location)
+    return result
+
+@app.post("/update_file")
+async def update_file(details: RepoDetails, file: UploadFile = File(...), repo_path: str = Form(...), message: str = Form(...)):
+    file_location = f"/tmp/{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(file.file.read())
+    result = update_file_in_github(file_location, repo_path, message, details.owner, details.repo, details.token)
+    os.remove(file_location)
+    return result
 
 # Run the app
 if __name__ == "__main__":
