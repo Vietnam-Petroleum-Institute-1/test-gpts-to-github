@@ -164,7 +164,7 @@ async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_p
     result = upload_file_to_github(file_location, repo_path, message, details.owner, details.repo, details.token)
     os.remove(file_location)
     return result
-@router.get("/token")
+@app.get("/token")
 def get_access_token():
     username = '@oilgas.ai'
     password = 'G59897'
@@ -191,7 +191,7 @@ def get_access_token():
         
     access_token = get_access_token()
     return access_token
-@router.get("/tokenapi")
+@app.get("/tokenapi")
 def get_access_token(user, password_user):
     username = user
     password = password_user
@@ -219,7 +219,7 @@ def get_access_token(user, password_user):
     access_token = get_access_token()
     return access_token
 
-@router.get("/tokenapipep")
+@app.get("/tokenapipep")
 def get_access_token(user, password_user):
     username = user
     password = password_user
@@ -247,7 +247,7 @@ def get_access_token(user, password_user):
     access_token = get_access_token()
     return access_token
 
-@router.get("/khaithac")
+@app.get("/khaithac")
 def get_access_token(user, password_user):
     username = user
     password = password_user
