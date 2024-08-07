@@ -3,6 +3,13 @@ from pydantic import BaseModel
 import requests
 import os
 import base64
+from fastapi import Header, APIRouter, HTTPException, FastAPI, UploadFile, File, Request, Form
+from pydantic import BaseModel
+from typing import List
+from fastapi import UploadFile, HTTPException
+import pandas as pd
+import tempfile
+from msal import PublicClientApplication  
 
 app = FastAPI()
 
@@ -157,7 +164,117 @@ async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_p
     result = upload_file_to_github(file_location, repo_path, message, details.owner, details.repo, details.token)
     os.remove(file_location)
     return result
+@router.get("/token")
+def get_access_token():
+    username = '@oilgas.ai'
+    password = 'G59897'
+    tenant_id = 'c5ec5abe-46cb-b3fe-c3b0071ffdb3'
+    scope = ['https://analysis.windows.net/powerbi/api/.default']
+ 
+    client_id = 'c3bf460c-48cb-ba7c-9597aa013552'
+    client_secret ='F3o8Q~RavvhkvmsD_Jl~kdm7qgWbm3'
+    
+    try:
+        app = PublicClientApplication(
+            client_id, authority="https://login.microsoftonline.com/"+tenant_id)
+        result = app.acquire_token_by_username_password(
+            username, password, scopes=scope)
+            
+        if "access_token" in result:
+            return result['access_token']
+        else:
+            print(result.get("error_description"))
+            return None
+ 
+    except Exception as ex:
+        print(ex)
+        
+    access_token = get_access_token()
+    return access_token
+@router.get("/tokenapi")
+def get_access_token(user, password_user):
+    username = user
+    password = password_user
+    tenant_id = 'c5ec5abe-76c1-46cb-b3fe-c3b0071ffdb3'
+    scope = ['https://analysis.windows.net/powerbi/api/.default']
+ 
+    client_id = 'c3bf460c-3f80-48cb-ba7c-9597aa013552'
+    client_secret ='F3o8Q~VJi5vIbNTzRavvhkvmsD_Jl~kdm7qgWbm3'
+    
+    try:
+        app = PublicClientApplication(
+            client_id, authority="https://login.microsoftonline.com/"+tenant_id)
+        result = app.acquire_token_by_username_password(
+            username, password, scopes=scope)
+            
+        if "access_token" in result:
+            return result['access_token']
+        else:
+            print(result.get("error_description"))
+            return None
+ 
+    except Exception as ex:
+        print(ex)
+        
+    access_token = get_access_token()
+    return access_token
 
+@router.get("/tokenapipep")
+def get_access_token(user, password_user):
+    username = user
+    password = password_user
+
+    tenant_id = '4de65572-91ab-476b-8d79-b83937779aa4'
+    scope = ['https://analysis.windows.net/powerbi/api/.default']
+ 
+    client_id = '40a27c84-d853-4bfe-b881-d5c8188b56a8'
+    
+    try:
+        app = PublicClientApplication(
+            client_id, authority="https://login.microsoftonline.com/"+tenant_id)
+        result = app.acquire_token_by_username_password(
+            username, password, scopes=scope)
+            
+        if "access_token" in result:
+            return result['access_token']
+        else:
+            print(result.get("error_description"))
+            return None
+ 
+    except Exception as ex:
+        print(ex)
+        
+    access_token = get_access_token()
+    return access_token
+
+@router.get("/khaithac")
+def get_access_token(user, password_user):
+    username = user
+    password = password_user
+
+    tenant_id = 'c513262f-406c-4ce9-8b69-b26baf5df3c4'
+    scope = ['https://analysis.windows.net/powerbi/api/.default']
+ 
+    client_id = 'fa21db3a-3b30-4a1f-9269-74663772993e'
+    
+    try:
+        app = PublicClientApplication(
+            client_id, authority="https://login.microsoftonline.com/"+tenant_id)
+        result = app.acquire_token_by_username_password(
+            username, password, scopes=scope)
+            
+        if "access_token" in result:
+            return result['access_token']
+        else:
+            print(result.get("error_description"))
+            return None
+ 
+    except Exception as ex:
+        print(ex)
+        
+    access_token = get_access_token()
+    return access_token
+    
 # Run the app
 if __name__ == "__main__":
     import uvicorn
