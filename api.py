@@ -166,13 +166,13 @@ async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_p
     return result
 @app.get("/token")
 def get_access_token():
-    username = '@oilgas.ai'
-    password = 'G59897'
-    tenant_id = 'c5ec5abe-46cb-b3fe-c3b0071ffdb3'
+    username = 'api@oilgas.ai'
+    password = 'Gaz59897'
+    tenant_id = 'c5ec5abe-76c1-46cb-b3fe-c3b0071ffdb3'
     scope = ['https://analysis.windows.net/powerbi/api/.default']
  
-    client_id = 'c3bf460c-48cb-ba7c-9597aa013552'
-    client_secret ='F3o8Q~RavvhkvmsD_Jl~kdm7qgWbm3'
+    client_id = 'c3bf460c-3f80-48cb-ba7c-9597aa013552'
+    client_secret ='F3o8Q~VJi5vIbNTzRavvhkvmsD_Jl~kdm7qgWbm3'
     
     try:
         app = PublicClientApplication(
