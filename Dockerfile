@@ -23,6 +23,7 @@ RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
 
 RUN pip install pyodbc
 RUN pip install sqlalchemy
+RUN pip install msal
 
 # Set the working directory in the container
 WORKDIR /app
