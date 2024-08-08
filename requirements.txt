@@ -23,4 +23,3 @@ statsmodels
 lasio==0.30
 pyod==1.0.9
 plotly
-msal
