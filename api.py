@@ -172,7 +172,7 @@ def get_access_token():
     scope = ['https://analysis.windows.net/powerbi/api/.default']
  
     client_id = 'c3bf460c-3f80-48cb-ba7c-9597aa013552'
-    client_secret ='F3o8Q~VJi5vIbNTzRavvhkvmsD_Jl~kdm7qgWbm3'
+    client_secret ='skG8Q~~GwoqybvArHvjmV_z5u8R5qA~05RKPedA8'
     
     try:
         app = PublicClientApplication(
@@ -199,7 +199,7 @@ def get_access_token(user, password_user):
     scope = ['https://analysis.windows.net/powerbi/api/.default']
  
     client_id = 'c3bf460c-3f80-48cb-ba7c-9597aa013552'
-    client_secret ='F3o8Q~VJi5vIbNTzRavvhkvmsD_Jl~kdm7qgWbm3'
+    client_secret ='skG8Q~~GwoqybvArHvjmV_z5u8R5qA~05RKPedA8'
     
     try:
         app = PublicClientApplication(
