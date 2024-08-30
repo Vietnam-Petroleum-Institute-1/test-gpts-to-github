@@ -10,6 +10,7 @@ from fastapi import UploadFile, HTTPException
 import pandas as pd
 import tempfile
 from msal import PublicClientApplication  
+import json
 
 app = FastAPI()
 
@@ -28,71 +29,68 @@ class RepoDetails(BaseModel):
     repo: str
     token: str
 
-class UpdateFileRequest(BaseModel):
-    file_path: str
-    repo_path: str
-    message: str
+class RepoInfo(BaseModel):
     owner: str
     repo: str
     token: str
 
-def upload_file_to_github(file_path, repo_path, message, owner, repo, token):
-    with open(file_path, "rb") as file:
-        content = base64.b64encode(file.read()).decode()
-    
-    url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
-    headers = {
-        'Authorization': f'token {token}',
-        'Content-Type': 'application/json'
-    }
-    data = {
-        'message': message,
-        'content': content
-    }
-    response = requests.put(url, headers=headers, json=data)
-    if response.status_code == 201:
-        return {'status': 'success', 'message': f'Successfully uploaded {repo_path}'}
-    else:
-        return {'status': 'failed', 'message': f'Failed to upload {repo_path}: {response.json()}'}
+def upload_file_to_github(file_content, repo_path, message, owner, repo, token):
+    content = base64.b64encode(file_content).decode('utf-8')
 
-def get_file_sha(owner: str, repo: str, repo_path: str, token: str) -> str:
     url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
     headers = {
         'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json'
     }
     response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json().get('sha')
+    sha = response.json().get('sha') if response.status_code == 200 else None
+
+    data = {
+        'message': message,
+        'content': content,
+    }
+    if sha:
+        data['sha'] = sha
+
+    response = requests.put(url, headers=headers, json=data)
+
+    if response.status_code in [200, 201]:
+        return f'Tải lên thành công {repo_path}'
     else:
-        return None
+        raise HTTPException(status_code=400, detail=f'Không thể tải lên {repo_path}: {response.text}')
 
-@app.post("/update_file")
-async def update_file_in_github(request: UpdateFileRequest):
+@app.post("/upload_files/")
+async def upload_files(
+    repo_info: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
     try:
-        with open(request.file_path, "rb") as file:
-            content = base64.b64encode(file.read()).decode()
+        repo_info_dict = json.loads(repo_info)
+        repo_info_obj = RepoInfo(**repo_info_dict)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON for repo_info")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid data for RepoInfo")
 
-        sha = get_file_sha(request.owner, request.repo, request.repo_path, request.token)
-        if sha is None:
-            raise HTTPException(status_code=400, detail=f'Failed to get SHA for {request.repo_path}')
-
-        url = f'https://api.github.com/repos/{request.owner}/{request.repo}/contents/{request.repo_path}'
-        headers = {
-            'Authorization': f'token {request.token}',
-            'Content-Type': 'application/json'
-        }
-        data = {
-            'message': request.message,
-            'content': content,
-            'sha': sha
-        }
-        response = requests.put(url, headers=headers, json=data)
-        if response.status_code == 200:
-            return {"status": "success", "message": f"Successfully updated {request.repo_path}"}
-        else:
-            raise HTTPException(status_code=400, detail=f'Failed to update {request.repo_path}: {response.json()}')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    results = []
+    for file in files:
+        file_content = await file.read()
+        repo_path = file.filename
+        message = f'Tải lên {file.filename} từ API'
+        try:
+            result = upload_file_to_github(
+                file_content, 
+                repo_path, 
+                message, 
+                repo_info_obj.owner, 
+                repo_info_obj.repo, 
+                repo_info_obj.token
+            )
+            results.append(result)
+        except HTTPException as e:
+            results.append(str(e.detail))
+    
+    return {"results": results}
 
 def delete_files_from_repo(owner: str, repo: str, token: str):
     def get_file_sha(path):
@@ -156,14 +154,6 @@ def delete_files_from_repo(owner: str, repo: str, token: str):
 def delete_files(details: RepoDetails):
     return delete_files_from_repo(details.owner, details.repo, details.token)
 
-@app.post("/upload_file")
-async def upload_file(details: RepoDetails, file: UploadFile = File(...), repo_path: str = Form(...), message: str = Form(...)):
-    file_location = f"/tmp/{file.filename}"
-    with open(file_location, "wb") as f:
-        f.write(file.file.read())
-    result = upload_file_to_github(file_location, repo_path, message, details.owner, details.repo, details.token)
-    os.remove(file_location)
-    return result
 @app.get("/token")
 def get_access_token():
     username = ''
