@@ -281,26 +281,19 @@ def get_access_token(user, password_user):
     
 @app.post("/upload_file")
 async def action_upload_files(input_data: ActionAPIInput):
-    try:
-        repo_info = json.loads(input_data.params['params']['repo_info'])
-        repo_info_obj = RepoInfo(**repo_info)
-        files_data = input_data.params['params']['files']
-    except (KeyError, json.JSONDecodeError):
-        raise HTTPException(status_code=400, detail="Dữ liệu đầu vào không hợp lệ")
-
     results = []
-    for file_data in files_data:
-        file_content = file_data['file_content'].encode('utf-8')
-        repo_path = file_data['file_name']
+    for file_data in input_data.params.files:
+        file_content = base64.b64decode(file_data.file_content).decode()
+        repo_path = file_data.file_name
         message = f'Tải lên {repo_path} từ Action API'
         try:
             result = upload_file_to_github(
                 file_content,
                 repo_path,
                 message,
-                repo_info_obj.owner,
-                repo_info_obj.repo,
-                repo_info_obj.token
+                input_data.params.repo_info.owner,
+                input_data.params.repo_info.repo,
+                input_data.params.repo_info.token
             )
             results.append(result)
         except HTTPException as e:
