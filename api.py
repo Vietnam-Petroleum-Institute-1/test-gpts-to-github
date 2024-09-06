@@ -13,6 +13,10 @@ from msal import PublicClientApplication
 import json
 
 app = FastAPI()
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 api_key = os.environ.get('API_KEY')
 
@@ -281,25 +285,30 @@ def get_access_token(user, password_user):
     
 @app.post("/upload_file")
 async def action_upload_files(input_data: ActionAPIInput):
-    results = []
-    for file_data in input_data.params.files:
-        file_content = base64.b64decode(file_data.file_content).decode()
-        repo_path = file_data.file_name
-        message = f'Tải lên {repo_path} từ Action API'
-        try:
-            result = upload_file_to_github(
-                file_content,
-                repo_path,
-                message,
-                input_data.params.repo_info.owner,
-                input_data.params.repo_info.repo,
-                input_data.params.repo_info.token
-            )
-            results.append(result)
-        except HTTPException as e:
-            results.append(str(e.detail))
-    
-    return {"results": results}
+    logger.debug(f"Received input data: {input_data}")
+    try:
+        results = []
+        for file_data in input_data.params.files:
+            file_content = base64.b64decode(file_data.file_content).decode()
+            repo_path = file_data.file_name
+            message = f'Tải lên {repo_path} từ Action API'
+            try:
+                result = upload_file_to_github(
+                    file_content,
+                    repo_path,
+                    message,
+                    input_data.params.repo_info.owner,
+                    input_data.params.repo_info.repo,
+                    input_data.params.repo_info.token
+                )
+                results.append(result)
+            except HTTPException as e:
+                results.append(str(e.detail))
+        
+        return {"results": results}
+    except Exception as e:
+        logger.exception("An error occurred: %s", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Run the app
 if __name__ == "__main__":
