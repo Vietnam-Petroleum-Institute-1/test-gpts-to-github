@@ -287,7 +287,26 @@ def get_access_token(user, password_user):
         
     access_token = get_access_token()
     return access_token
-    
+
+def upload_file_to_github_2(file_content, repo_path, message, owner, repo, token):
+    url = f'https://api.github.com/repos/{owner}/{repo}/contents/{repo_path}'
+    headers = {
+        'Authorization': f'token {token}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    data = {
+        'message': message,
+        'content': file_content  # Đã là base64, không cần mã hóa lại
+    }
+    logger.debug(f"Sending request to GitHub API: URL={url}, Headers={headers}, Data={data}")
+    response = requests.put(url, headers=headers, json=data)
+    logger.debug(f"GitHub API response: Status={response.status_code}, Content={response.text}")
+    if response.status_code in [200, 201]:
+        return f'Tải lên thành công {repo_path}'
+    else:
+        raise HTTPException(status_code=400, detail=f'Không thể tải lên {repo_path}: {response.text}')
+
+
 @app.post("/upload_file")
 async def action_upload_files(input_data: ActionAPIInput):
     logger.debug(f"Received input data: {input_data}")
@@ -302,7 +321,7 @@ async def action_upload_files(input_data: ActionAPIInput):
             message = f'Tải lên {repo_path} từ Action API'
             logger.debug(f"Processing file: {repo_path}, Content: {file_content[:30]}...")  # Log nội dung file (chỉ log một phần để tránh quá dài)
             try:
-                result = upload_file_to_github(
+                result = upload_file_to_github_2(
                     file_content,
                     repo_path,
                     message,
