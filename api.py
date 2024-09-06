@@ -287,25 +287,31 @@ def get_access_token(user, password_user):
 async def action_upload_files(input_data: ActionAPIInput):
     logger.debug(f"Received input data: {input_data}")
     try:
+        repo_info = input_data.params['repo_info']
+        files = input_data.params['files']
+        
         results = []
-        for file_data in input_data.params.files:
-            file_content = base64.b64decode(file_data.file_content).decode()
-            repo_path = file_data.file_name
+        for file_data in files:
+            file_content = base64.b64decode(file_data['file_content']).decode()
+            repo_path = file_data['file_name']
             message = f'Tải lên {repo_path} từ Action API'
             try:
                 result = upload_file_to_github(
                     file_content,
                     repo_path,
                     message,
-                    input_data.params.repo_info.owner,
-                    input_data.params.repo_info.repo,
-                    input_data.params.repo_info.token
+                    repo_info['owner'],
+                    repo_info['repo'],
+                    repo_info['token']
                 )
                 results.append(result)
             except HTTPException as e:
                 results.append(str(e.detail))
         
         return {"results": results}
+    except KeyError as e:
+        logger.exception(f"Missing key in input data: {e}")
+        raise HTTPException(status_code=400, detail=f"Missing key in input data: {e}")
     except Exception as e:
         logger.exception("An error occurred: %s", str(e))
         raise HTTPException(status_code=500, detail=str(e))
