@@ -42,6 +42,11 @@ class FileData(BaseModel):
     file_name: str
     file_content: str
 
+
+class Params(BaseModel):
+    repo_info: RepoInfo
+    files: List[FileData]
+
 class ActionAPIInput(BaseModel):
     domain: str
     method: str
@@ -49,7 +54,7 @@ class ActionAPIInput(BaseModel):
     operation: str
     operation_hash: str
     is_consequential: bool
-    params: dict
+    params: Params
 
 def upload_file_to_github(file_content, repo_path, message, owner, repo, token):
     content = base64.b64encode(file_content).decode('utf-8')
@@ -292,8 +297,8 @@ async def action_upload_files(input_data: ActionAPIInput):
         
         results = []
         for file_data in files:
-            file_content = file_data['file_content']  # Giữ nguyên dạng base64
-            repo_path = file_data['file_name']
+            file_content = file_data.file_content  # Giữ nguyên dạng base64
+            repo_path = file_data.file_name
             message = f'Tải lên {repo_path} từ Action API'
             logger.debug(f"Processing file: {repo_path}, Content: {file_content[:30]}...")  # Log nội dung file (chỉ log một phần để tránh quá dài)
             try:
