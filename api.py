@@ -34,6 +34,19 @@ class RepoInfo(BaseModel):
     repo: str
     token: str
 
+class FileData(BaseModel):
+    file_name: str
+    file_content: str
+
+class ActionAPIInput(BaseModel):
+    domain: str
+    method: str
+    path: str
+    operation: str
+    operation_hash: str
+    is_consequential: bool
+    params: dict
+
 def upload_file_to_github(file_content, repo_path, message, owner, repo, token):
     content = base64.b64encode(file_content).decode('utf-8')
 
@@ -59,7 +72,8 @@ def upload_file_to_github(file_content, repo_path, message, owner, repo, token):
     else:
         raise HTTPException(status_code=400, detail=f'Không thể tải lên {repo_path}: {response.text}')
 
-@app.post("/upload_files/")
+#@app.post("/upload_file")
+@app.post("/action_upload_file") 
 async def upload_files(
     repo_info: str = Form(...),
     files: List[UploadFile] = File(...)
@@ -265,6 +279,35 @@ def get_access_token(user, password_user):
     access_token = get_access_token()
     return access_token
     
+@app.post("/upload_file")
+async def action_upload_files(input_data: ActionAPIInput):
+    try:
+        repo_info = json.loads(input_data.params['params']['repo_info'])
+        repo_info_obj = RepoInfo(**repo_info)
+        files_data = input_data.params['params']['files']
+    except (KeyError, json.JSONDecodeError):
+        raise HTTPException(status_code=400, detail="Dữ liệu đầu vào không hợp lệ")
+
+    results = []
+    for file_data in files_data:
+        file_content = file_data['file_content'].encode('utf-8')
+        repo_path = file_data['file_name']
+        message = f'Tải lên {repo_path} từ Action API'
+        try:
+            result = upload_file_to_github(
+                file_content,
+                repo_path,
+                message,
+                repo_info_obj.owner,
+                repo_info_obj.repo,
+                repo_info_obj.token
+            )
+            results.append(result)
+        except HTTPException as e:
+            results.append(str(e.detail))
+    
+    return {"results": results}
+
 # Run the app
 if __name__ == "__main__":
     import uvicorn
