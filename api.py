@@ -287,22 +287,23 @@ def get_access_token(user, password_user):
 async def action_upload_files(input_data: ActionAPIInput):
     logger.debug(f"Received input data: {input_data}")
     try:
-        repo_info = input_data.params['repo_info']
-        files = input_data.params['files']
+        repo_info = input_data.params.repo_info
+        files = input_data.params.files
         
         results = []
         for file_data in files:
             file_content = file_data['file_content']  # Giữ nguyên dạng base64
             repo_path = file_data['file_name']
             message = f'Tải lên {repo_path} từ Action API'
+            logger.debug(f"Processing file: {repo_path}, Content: {file_content[:30]}...")  # Log nội dung file (chỉ log một phần để tránh quá dài)
             try:
                 result = upload_file_to_github(
                     file_content,
                     repo_path,
                     message,
-                    repo_info['owner'],
-                    repo_info['repo'],
-                    repo_info['token']
+                    repo_info.owner,
+                    repo_info.repo,
+                    repo_info.token
                 )
                 results.append(result)
             except HTTPException as e:
