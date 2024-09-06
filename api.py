@@ -292,7 +292,7 @@ async def action_upload_files(input_data: ActionAPIInput):
         
         results = []
         for file_data in files:
-            file_content = base64.b64decode(file_data['file_content']).decode()
+            file_content = file_data['file_content']  # Giữ nguyên dạng base64
             repo_path = file_data['file_name']
             message = f'Tải lên {repo_path} từ Action API'
             try:
